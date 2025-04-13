@@ -1,2 +1,3 @@
 # Ignore IoT network report files
 iot_network_report_*.txt
+iot_network_report_*.json

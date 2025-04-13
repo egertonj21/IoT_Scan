@@ -1,7 +1,7 @@
 import nmap
 from manuf import manuf
 
-def scan_ports(ip, ports):
+def scan_ports(ip, ports, detect_os=True):  # Add detect_os argument
     nm = nmap.PortScanner()
     result = {
         "ip": ip,
@@ -26,8 +26,8 @@ def scan_ports(ip, ports):
                 if vendor:
                     result["vendor"] = vendor
             
-            # Extract OS information
-            if 'osmatch' in nm[ip]:
+            # Extract OS information only if detect_os is True
+            if detect_os and 'osmatch' in nm[ip]:
                 os_matches = nm[ip]['osmatch']
                 if os_matches:
                     result["os"] = os_matches[0]['name']

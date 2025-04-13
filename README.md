@@ -1,0 +1,1 @@
+Code to produce a report on the network to which the device is connected, scans for IP addresses, takes MAC addresses and attempts to figure out manufacturer details, OS etc. Also checks status of a preconfigured list of ports. Needs nmap installed on PC.

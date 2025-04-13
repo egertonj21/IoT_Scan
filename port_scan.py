@@ -1,34 +1,37 @@
-import os
 import nmap
+from manuf import manuf
 
-# Set the path to nmap if it's not found in the PATH
-os.environ["PATH"] += r";C:\Program Files (x86)\Nmap"  # Adjust the path to your nmap location
-
-def scan_ports(ip_address, ports_to_scan):
+def scan_ports(ip, ports):
     nm = nmap.PortScanner()
-
-    # Convert the list of ports to a comma-separated string
-    ports_str = ",".join(map(str, ports_to_scan))
+    result = {
+        "ip": ip,
+        "open_ports": [],
+        "mac": None,
+        "vendor": "Unknown",  # Default vendor if we can't determine it
+        "os": "Unknown"
+    }
 
     try:
-        # Scan the IP address on the specified ports
-        nm.scan(ip_address, ports_str)
-        
-        # Check if the scan result contains the IP address
-        if ip_address not in nm.all_hosts():
-            print(f"No results for IP address: {ip_address}")
-            return []
+        nm.scan(hosts=ip, arguments=f'-O -p {ports}')
+        if ip in nm.all_hosts():
+            # Extract open ports and their states
+            if 'tcp' in nm[ip]:
+                result["open_ports"] = [(port, nm[ip]['tcp'][port]['state'], nm[ip]['tcp'][port].get('name', 'Unknown Service')) for port in nm[ip]['tcp']]
+            
+            # Extract MAC address and use manuf to get vendor
+            if 'addresses' in nm[ip] and 'mac' in nm[ip]['addresses']:
+                result["mac"] = nm[ip]['addresses']['mac']
+                mac_parser = manuf.MacParser()
+                vendor = mac_parser.get_manuf(result["mac"])  # Get the manufacturer
+                if vendor:
+                    result["vendor"] = vendor
+            
+            # Extract OS information
+            if 'osmatch' in nm[ip]:
+                os_matches = nm[ip]['osmatch']
+                if os_matches:
+                    result["os"] = os_matches[0]['name']
+    except Exception as e:
+        print(f"Error scanning {ip}: {e}")
 
-        # Get the open ports from the scan result
-        open_ports = []
-        for port in nm[ip_address].all_protocols():
-            if port == 'tcp':  # We are interested in TCP ports only
-                for p in nm[ip_address][port]:
-                    if nm[ip_address][port][p]['state'] == 'open':
-                        open_ports.append(p)
-
-        return open_ports
-
-    except nmap.nmap.PortScannerError as e:
-        print(f"Error scanning {ip_address}: {e}")
-        return []
+    return result
